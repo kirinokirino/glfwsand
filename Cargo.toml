@@ -5,6 +5,14 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "pixelbuffer"
+path = "src/pixelbuffer/lib.rs"
+
+[[bin]]
+name = "game"
+path = "src/conductor/main.rs"
+
 [dependencies]
 glfw = "0.43.0"
 glu-sys = "0.1.4"

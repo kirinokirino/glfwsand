@@ -77,18 +77,6 @@ impl Window {
     }
 }
 
-pub fn xy(index: usize, resolution: Resolution) -> FramebufferCoordinates {
-    let (width, height) = resolution.into();
-    debug_assert!(index < usize::from(width) * usize::from(height));
-    unsafe {
-        // SAFETY: debug assertion that the usize fits into u16.
-        let x: u16 = (index % usize::from(width)).try_into().unwrap_unchecked();
-        #[allow(clippy::integer_division)]
-        let y: u16 = (index / usize::from(width)).try_into().unwrap_unchecked();
-        FramebufferCoordinates::from((x, y))
-    }
-}
-
 #[derive(Clone, Copy)]
 pub struct Resolution {
     pub width: u16,
@@ -135,20 +123,5 @@ impl From<(i32, i32)> for Resolution {
                 height: height.try_into().unwrap_unchecked(),
             }
         }
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct FramebufferCoordinates((u16, u16));
-
-impl From<(u16, u16)> for FramebufferCoordinates {
-    fn from(coords: (u16, u16)) -> Self {
-        Self(coords)
-    }
-}
-
-impl From<FramebufferCoordinates> for (u16, u16) {
-    fn from(coords: FramebufferCoordinates) -> (u16, u16) {
-        (coords.0 .0, coords.0 .1)
     }
 }
