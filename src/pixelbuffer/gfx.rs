@@ -1,5 +1,4 @@
 use crate::ufb::Resolution;
-use glam::Vec2;
 use std::default::Default;
 
 #[derive(Clone, Copy)]
@@ -10,6 +9,7 @@ pub struct Pixel {
 }
 
 impl Pixel {
+    #[must_use]
     pub const fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }
@@ -26,6 +26,7 @@ pub struct PixelBuffer {
 }
 
 impl PixelBuffer {
+    #[must_use]
     pub fn new(resolution: Resolution) -> Self {
         Self {
             resolution,
@@ -38,6 +39,7 @@ impl PixelBuffer {
         self.buffer[usize::from(x) + usize::from(y) * usize::from(self.resolution.width)] = pixel;
     }
 
+    #[must_use]
     pub fn get_buffer(self) -> Vec<Pixel> {
         self.buffer
     }
@@ -58,6 +60,7 @@ impl From<FramebufferCoordinates> for (u16, u16) {
     }
 }
 
+#[must_use]
 pub fn xy(index: usize, resolution: Resolution) -> FramebufferCoordinates {
     let (width, height) = resolution.into();
     debug_assert!(index < usize::from(width) * usize::from(height));

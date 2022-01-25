@@ -17,6 +17,7 @@ pub struct Window {
 
 impl Window {
     /// Instantiate a window
+    #[must_use]
     pub fn new(res: Resolution, title: &str) -> Self {
         let (w, h) = res.into();
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).expect("Couldn't initialize the window.");
@@ -46,7 +47,7 @@ impl Window {
     }
 
     fn swap(&mut self) {
-        if let Some(frame) = &self.frame {
+        if let Some(ref frame) = self.frame {
             unsafe {
                 glRasterPos2i(-1, 1);
                 glPixelZoom(1., -1.);
@@ -84,10 +85,12 @@ pub struct Resolution {
 }
 
 impl Resolution {
+    #[must_use]
     pub const fn new(width: u16, height: u16) -> Self {
         Self { width, height }
     }
 
+    #[must_use]
     pub fn area(self) -> usize {
         usize::from(self.width) * usize::from(self.height)
     }

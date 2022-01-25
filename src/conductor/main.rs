@@ -62,7 +62,8 @@ pub struct Circle {
 }
 
 impl Circle {
-    pub fn new(origin: Vec2, radius: f32, color_center: u32, color_end: u32) -> Self {
+    #[must_use]
+    pub const fn new(origin: Vec2, radius: f32, color_center: u32, color_end: u32) -> Self {
         Self {
             origin,
             radius,
@@ -95,5 +96,5 @@ impl Circle {
 }
 
 fn map(value: f32, start1: f32, stop1: f32, start2: f32, stop2: f32) -> f32 {
-    (value - start1) / (stop1 - start1) * (stop2 - start2) + start2
+    ((value - start1) / (stop1 - start1)).mul_add(stop2 - start2, start2)
 }
