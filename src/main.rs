@@ -1,6 +1,7 @@
 #![warn(
     clippy::pedantic,
     clippy::nursery,
+    clippy::cargo,
     clippy::unwrap_used,
     clippy::unwrap_in_result,
     clippy::unneeded_field_pattern,
@@ -28,25 +29,27 @@
     clippy::create_dir,
     clippy::clone_on_ref_ptr,
     clippy::as_conversions,
-    clippy::verbose_file_reads
+    clippy::verbose_file_reads,
+    clippy::missing_safety_doc
 )]
+
 mod ufb;
-use ufb::{ColorDepth, Window};
+use ufb::{xy, ColorDepth, Resolution, Window};
 
 const WIDTH: u16 = 640;
 const HEIGHT: u16 = 640;
+const RESOLUTION: Resolution = Resolution::new(WIDTH, HEIGHT);
 
 fn main() {
-    let mut win = Window::new(WIDTH, HEIGHT, ColorDepth::Rgb8, "game");
-    for (iter, pixel) in win.get_frame().chunks_exact_mut(3).enumerate() {
-        let x = iter % WIDTH as usize;
-        let y = iter / WIDTH as usize;
-        let val = x ^ y;
+    let mut window = Window::new(WIDTH, HEIGHT, ColorDepth::Rgb8, "game");
+    for (iter, pixel) in window.get_frame().chunks_exact_mut(3).enumerate() {
+        let coords = xy(iter, RESOLUTION);
+        let val = 0x123456;
         let hex = format!("{:06x}", val);
         let r = u8::from_str_radix(&hex[0..2], 16).unwrap();
         let g = u8::from_str_radix(&hex[2..4], 16).unwrap();
         let b = u8::from_str_radix(&hex[4..6], 16).unwrap();
         pixel.copy_from_slice(&[r, g, b]);
     }
-    win.show();
+    window.show();
 }

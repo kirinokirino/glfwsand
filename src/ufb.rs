@@ -5,7 +5,7 @@ use glu_sys::glu::{
 };
 
 use glfw::{Action, Context, Key};
-use std::convert::From;
+use std::convert::{From, Into};
 
 /// Supported color depths
 #[repr(u32)]
@@ -31,9 +31,8 @@ impl From<ColorDepth> for usize {
 /// Wrapper around a glfw window
 pub struct Window {
     glfw: glfw::Glfw,
-    win: glfw::Window,
-    w: u16,
-    h: u16,
+    window: glfw::Window,
+    pub resolution: Resolution,
     visual: ColorDepth,
     events: std::sync::mpsc::Receiver<(f64, glfw::WindowEvent)>,
     frame: Vec<u8>,
@@ -56,9 +55,8 @@ impl Window {
         glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
         Self {
             glfw,
-            win: window,
-            w,
-            h,
+            window,
+            resolution: Resolution::new(w, h),
             visual,
             events,
             frame: vec![0u8; usize::from(w) * usize::from(h) * usize::from(visual)],
@@ -68,15 +66,6 @@ impl Window {
     /// Get the internal buffer
     pub fn get_frame(&mut self) -> &mut [u8] {
         &mut self.frame
-    }
-
-    /// Get the pixels at `x, y`
-    pub fn buffer_index_at(&self, x: u16, y: u16) -> Option<usize> {
-        if x >= self.w || y >= self.h {
-            None
-        } else {
-            Some((usize::from(y) * usize::from(self.w) + usize::from(x)) * usize::from(self.visual))
-        }
     }
 
     fn swap(&mut self) {
@@ -89,26 +78,27 @@ impl Window {
         unsafe {
             glRasterPos2i(-1, 1);
             glPixelZoom(1., -1.);
+            let (width, height) = self.resolution.into();
             #[allow(clippy::as_conversions)]
             glDrawPixels(
-                self.w as _,
-                self.h as _,
+                i32::from(width),
+                i32::from(height),
                 gl_enum,
                 GL_UNSIGNED_BYTE,
-                self.frame.as_ptr() as _,
+                self.frame.as_ptr().cast(),
             );
         }
-        self.win.swap_buffers();
+        self.window.swap_buffers();
     }
 
     /// Show the window
     pub fn show(&mut self) {
-        while !self.win.should_close() {
+        while !self.window.should_close() {
             self.swap();
             self.glfw.poll_events();
             for (_, event) in glfw::flush_messages(&self.events) {
                 if let glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) = event {
-                    self.win.set_should_close(true);
+                    self.window.set_should_close(true);
                 }
             }
         }
@@ -120,9 +110,68 @@ impl Window {
         self.glfw.poll_events();
         for (_, event) in glfw::flush_messages(&self.events) {
             if let glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) = event {
-                self.win.set_should_close(true);
+                self.window.set_should_close(true);
             }
         }
-        !self.win.should_close()
+        !self.window.should_close()
+    }
+}
+
+pub fn xy(index: usize, resolution: Resolution) -> FramebufferCoordinates {
+    let (width, height) = resolution.into();
+    debug_assert!(index < usize::from(width) * usize::from(height));
+    unsafe {
+        // SAFETY: debug assertion that the usize fits into u16.
+        let x: u16 = (index % usize::from(width)).try_into().unwrap_unchecked();
+        #[allow(clippy::integer_division)]
+        let y: u16 = (index / usize::from(width)).try_into().unwrap_unchecked();
+        FramebufferCoordinates::from((x, y))
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Resolution((u16, u16));
+impl Resolution {
+    pub const fn new(width: u16, height: u16) -> Self {
+        Self((width, height))
+    }
+}
+
+impl From<(u16, u16)> for Resolution {
+    fn from(value: (u16, u16)) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Resolution> for (u16, u16) {
+    fn from(value: Resolution) -> Self {
+        value.0
+    }
+}
+
+#[allow(clippy::fallible_impl_from)]
+impl From<(i32, i32)> for Resolution {
+    fn from(value: (i32, i32)) -> Self {
+        let (width, height) = value;
+        debug_assert!(width < i32::from(u16::MAX));
+        debug_assert!(height < i32::from(u16::MAX));
+        debug_assert!(width > 0);
+        debug_assert!(height > 0);
+        unsafe {
+            // SAFETY: assertion in debug builds that the width and height fits into u16.
+            Self((
+                width.try_into().unwrap_unchecked(),
+                height.try_into().unwrap_unchecked(),
+            ))
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct FramebufferCoordinates((u16, u16));
+
+impl From<(u16, u16)> for FramebufferCoordinates {
+    fn from(coords: (u16, u16)) -> Self {
+        Self(coords)
     }
 }
