@@ -33,23 +33,26 @@
     clippy::missing_safety_doc
 )]
 
+use glam::Vec2;
+
+mod gfx;
+use gfx::{Circle, PixelBuffer};
+
 mod ufb;
-use ufb::{xy, ColorDepth, Resolution, Window};
+use ufb::{Resolution, Window};
 
 const WIDTH: u16 = 640;
 const HEIGHT: u16 = 640;
 const RESOLUTION: Resolution = Resolution::new(WIDTH, HEIGHT);
 
 fn main() {
-    let mut window = Window::new(WIDTH, HEIGHT, ColorDepth::Rgb8, "game");
-    for (iter, pixel) in window.get_frame().chunks_exact_mut(3).enumerate() {
-        let coords = xy(iter, RESOLUTION);
-        let val = 0x123456;
-        let hex = format!("{:06x}", val);
-        let r = u8::from_str_radix(&hex[0..2], 16).unwrap();
-        let g = u8::from_str_radix(&hex[2..4], 16).unwrap();
-        let b = u8::from_str_radix(&hex[4..6], 16).unwrap();
-        pixel.copy_from_slice(&[r, g, b]);
+    let mut window = Window::new(RESOLUTION, "game");
+    let mut counter = 50.0;
+    while window.shown() {
+        counter += 1.0;
+        let mut buffer: PixelBuffer = PixelBuffer::new(RESOLUTION);
+        let circle = Circle::new(Vec2::new(counter, 50.), 20.0, 100, 255);
+        circle.draw(&mut buffer);
+        window.set_frame(buffer.get_buffer());
     }
-    window.show();
 }
