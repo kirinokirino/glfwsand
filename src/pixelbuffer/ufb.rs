@@ -30,6 +30,7 @@ impl Window {
             )
             .expect("Couldn't initialize the window.");
         window.set_resizable(false);
+        window.set_key_polling(true);
         window.make_current();
         glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
         Self {
@@ -66,16 +67,29 @@ impl Window {
     }
 
     /// Add logic while the window is shown
-    pub fn shown(&mut self) -> bool {
+    pub fn shown(&mut self) -> Option<Event> {
         self.swap();
         self.glfw.poll_events();
         for (_, event) in glfw::flush_messages(&self.events) {
-            if let glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) = event {
-                self.window.set_should_close(true);
+            match event {
+                glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
+                    self.window.set_should_close(true);
+                }
+                glfw::WindowEvent::Key(key, _, Action::Press, _) => return Some(Event::Key(key)),
+                _ => (),
             }
         }
-        !self.window.should_close()
+        if self.window.should_close() {
+            return Some(Event::Close);
+        }
+        None
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Event {
+    Key(Key),
+    Close,
 }
 
 #[derive(Clone, Copy)]
