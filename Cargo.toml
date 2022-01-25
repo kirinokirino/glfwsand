@@ -1,0 +1,10 @@
+[package]
+name = "ufb1"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+glfw = "0.43.0"
+glu-sys = "0.1.4"
