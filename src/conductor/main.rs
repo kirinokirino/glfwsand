@@ -33,16 +33,14 @@
     clippy::missing_safety_doc
 )]
 
-use glam::Vec2;
-use pixelbuffer::{Pixel, PixelBuffer, Resolution, Window};
+mod world;
+use world::World;
 
-const RESOLUTION: Resolution = Resolution::new(320, 320);
+use pixelbuffer::Resolution;
+
+const RESOLUTION: Resolution = Resolution::new(480, 480);
 
 fn main() {
-    let mut window = Window::new(RESOLUTION, "game");
-    while window.shown() {
-        let mut buffer: PixelBuffer = PixelBuffer::new(RESOLUTION);
-
-        window.set_frame(buffer.get_buffer());
-    }
+    let mut world = World::new(RESOLUTION, "game");
+    world.start();
 }
