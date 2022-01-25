@@ -35,7 +35,8 @@
 
 mod world;
 use world::World;
-
+mod automata;
+mod common;
 use pixelbuffer::Resolution;
 
 const RESOLUTION: Resolution = Resolution::new(480, 480);

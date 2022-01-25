@@ -21,6 +21,5 @@ path = "src/conductor/main.rs"
 [dependencies]
 glfw = "0.43.0"
 glu-sys = "0.1.4"
-glam = { version = "0.20", default-features = true, features = [
-    "debug-glam-assert",
-] }
+#glam = { version = "0.20", default-features = true, features = ["debug-glam-assert"] }
+fastrand = "1.7.0"

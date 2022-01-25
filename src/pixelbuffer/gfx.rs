@@ -34,9 +34,15 @@ impl PixelBuffer {
         }
     }
 
-    pub fn set_pixel(&mut self, coords: FramebufferCoordinates, pixel: Pixel) {
+    pub fn set_pixel(&mut self, coords: FramebufferCoordinates, mut pixel: Pixel) {
         let (x, y) = coords.into();
-        self.buffer[usize::from(x) + usize::from(y) * usize::from(self.resolution.width)] = pixel;
+        let pixel_position = self
+            .buffer
+            .get_mut(usize::from(x) + usize::from(y) * usize::from(self.resolution.width));
+        match pixel_position {
+            Some(pixel_position) => std::mem::swap(pixel_position, &mut pixel),
+            None => println!("tried to set pixel outside of pixelbuffer."),
+        }
     }
 
     #[must_use]

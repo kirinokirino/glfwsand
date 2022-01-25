@@ -108,6 +108,12 @@ impl Resolution {
     pub fn area(self) -> usize {
         usize::from(self.width) * usize::from(self.height)
     }
+
+    #[must_use]
+    pub const fn center(self) -> (u16, u16) {
+        #[allow(clippy::integer_division)]
+        (self.width / 2, self.height / 2)
+    }
 }
 
 impl From<(u16, u16)> for Resolution {
