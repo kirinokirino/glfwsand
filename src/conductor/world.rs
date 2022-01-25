@@ -1,4 +1,3 @@
-use crate::automata::random_walker::Walker;
 use crate::automata::Automata;
 use crate::common::Position;
 use hecs::PreparedQuery;
@@ -9,7 +8,7 @@ pub struct World {
     resolution: Resolution,
 
     ecs: Ecs,
-    walkers: Vec<Walker>,
+    mouse: (f64, f64),
 }
 
 impl World {
@@ -17,8 +16,8 @@ impl World {
         Self {
             window: Window::new(resolution, title),
             resolution,
-            walkers: Vec::new(),
             ecs: Ecs::new(),
+            mouse: (0.0, 0.0),
         }
     }
     fn add_walkers(&mut self) {
@@ -30,8 +29,16 @@ impl World {
     }
 
     fn random_walkers_system(&mut self, query: &mut PreparedQuery<(&mut Position, &Automata)>) {
+        let (mouse_x, mouse_y) = self.mouse;
+        let mouse_pos = Position::new(mouse_x as i64, mouse_y as i64);
         for (id, (pos, automata)) in query.query_mut(&mut self.ecs) {
-            *pos += Position::new(fastrand::i64(-1..2), fastrand::i64(-1..2));
+            if (mouse_pos.distance(pos)) < 50 {
+                let speed_y = (pos.y - mouse_pos.y).signum();
+                let speed_x = (pos.x - mouse_pos.x).signum();
+                *pos += Position::new(speed_x, speed_y);
+            } else {
+                *pos += Position::new(fastrand::i64(-1..2), fastrand::i64(-1..2));
+            }
         }
     }
 
@@ -53,6 +60,7 @@ impl World {
                         glfw::Key::Space => self.add_walkers(),
                         _ => println!("Pressed unhandled key {:?}", key),
                     },
+                    Event::Cursor((x, y)) => self.mouse = (x, y),
                 }
             }
             let mut buffer: PixelBuffer = PixelBuffer::new(self.resolution);
