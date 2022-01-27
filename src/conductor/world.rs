@@ -48,10 +48,11 @@ impl World {
     }
 
     pub fn start(&mut self) {
-        loop {
-            if let Some(event) = self.window.shown() {
+        'running: loop {
+            let events = self.window.shown();
+            for event in events {
                 match event {
-                    Event::Close => break,
+                    Event::Close => break 'running,
                     Event::Key(key) => match key {
                         glfw::Key::W => (),
                         glfw::Key::S => (),

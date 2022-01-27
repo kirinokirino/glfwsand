@@ -1,7 +1,6 @@
 use crate::ufb::Resolution;
 use std::default::Default;
-
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Pixel {
     r: u8,
     g: u8,
@@ -13,10 +12,15 @@ impl Pixel {
     pub const fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }
+
+    #[must_use]
+    pub const fn alpha() -> Self {
+        Self::new(0xff, 0, 0xba)
+    }
 }
 impl Default for Pixel {
     fn default() -> Self {
-        Self::new(0, 0, 0)
+        Self::alpha()
     }
 }
 
@@ -35,6 +39,9 @@ impl PixelBuffer {
     }
 
     pub fn set_pixel(&mut self, coords: FramebufferCoordinates, mut pixel: Pixel) {
+        if pixel == Pixel::alpha() {
+            return;
+        }
         let (x, y) = coords.into();
         let pixel_position = self
             .buffer

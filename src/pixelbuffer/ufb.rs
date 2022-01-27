@@ -68,22 +68,22 @@ impl Window {
     }
 
     /// Add logic while the window is shown
-    pub fn shown(&mut self) -> Option<Event> {
+    pub fn shown(&mut self) -> Vec<Event> {
         self.swap();
         self.glfw.poll_events();
-        let mut e = None;
+        let mut events = Vec::new();
         for (_, event) in glfw::flush_messages(&self.events) {
-            e = match event {
+            match event {
                 glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                     self.window.set_should_close(true);
-                    Some(Event::Close)
+                    events.push(Event::Close);
                 }
-                glfw::WindowEvent::Key(key, _, Action::Press, _) => Some(Event::Key(key)),
-                glfw::WindowEvent::CursorPos(x, y) => Some(Event::Cursor((x, y))),
-                _ => None,
+                glfw::WindowEvent::Key(key, _, Action::Press, _) => events.push(Event::Key(key)),
+                glfw::WindowEvent::CursorPos(x, y) => events.push(Event::Cursor((x, y))),
+                _ => (),
             };
         }
-        e
+        events
     }
 }
 
