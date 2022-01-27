@@ -1,20 +1,10 @@
+use crate::automata::Destination;
 use crate::common::Position;
 use fastrand;
 
-pub struct Walker {
-    pub position: Position,
-}
-
-impl Walker {
-    pub const fn new(position: Position) -> Self {
-        Self { position }
-    }
-
-    pub fn update(&mut self) {
-        self.position += Position::new(fastrand::i64(-1..2), fastrand::i64(-1..2));
-    }
-
-    pub fn draw(&mut self /* viewport */) {
-        todo!();
-    }
+const SPEED: i64 = 1;
+pub fn update(pos: &Position) -> Destination {
+    Destination::from(
+        *pos + Position::new(fastrand::i64(-SPEED..=SPEED), fastrand::i64(-SPEED..=SPEED)),
+    )
 }

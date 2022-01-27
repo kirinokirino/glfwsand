@@ -1,4 +1,5 @@
-use crate::automata::Automata;
+use crate::automata;
+use crate::automata::{Automata, Destination};
 use crate::common::Position;
 use hecs::PreparedQuery;
 use hecs::World as Ecs;
@@ -20,64 +21,69 @@ impl World {
             mouse: (0.0, 0.0),
         }
     }
+
     fn add_walkers(&mut self) {
         let to_spawn = (0..50).map(|_| {
             let pos = Position::new(fastrand::i64(50..400), fastrand::i64(50..400));
-            (Automata::RandomWalker, pos)
+            if fastrand::bool() {
+                (Automata::RandomWalker, pos, Destination::from(pos))
+            } else {
+                (Automata::Water, pos, Destination::from(pos))
+            }
         });
         self.ecs.spawn_batch(to_spawn);
     }
 
-    fn random_walkers_system(&mut self, query: &mut PreparedQuery<(&mut Position, &Automata)>) {
-        let (mouse_x, mouse_y) = self.mouse;
-        let mouse_pos = Position::new(mouse_x as i64, mouse_y as i64);
-        for (id, (pos, automata)) in query.query_mut(&mut self.ecs) {
-            if (mouse_pos.distance(pos)) < 50 {
-                let speed_y = (pos.y - mouse_pos.y).signum();
-                let speed_x = (pos.x - mouse_pos.x).signum();
-                *pos += Position::new(speed_x, speed_y);
-            } else {
-                *pos += Position::new(fastrand::i64(-1..2), fastrand::i64(-1..2));
+    fn update_automata_destination_system(
+        &mut self,
+        query: &mut PreparedQuery<(&mut Destination, &Position, &Automata)>,
+    ) {
+        for (_id, (dest, pos, automata)) in query.query_mut(&mut self.ecs) {
+            match automata {
+                Automata::RandomWalker => *dest = automata::random_walker::update(pos),
+                Automata::Water => *dest = automata::water::update(pos),
             }
         }
     }
 
-    fn move_walkers_system(
-        &mut self,
-        delta: Position,
-        query: &mut PreparedQuery<(&mut Position, &Automata)>,
-    ) {
-        for (id, (pos, automata)) in query.query_mut(&mut self.ecs) {
-            *pos += delta;
-        }
-    }
-
-    fn run_update_systems(&mut self) {
-        let mut q = PreparedQuery::<(&mut Position, &Automata)>::default();
-        self.random_walkers_system(&mut q);
-        self.move_walkers_system(Position::new(1, 1), &mut q);
-    }
-
-    fn draw_point_automata_system(
+    fn resolve_movement_and_draw_point_automata_system(
         &mut self,
         buffer: &mut PixelBuffer,
-        query: &mut PreparedQuery<(&mut Position, &Automata)>,
+        query: &mut PreparedQuery<(&mut Position, &Destination, &Automata)>,
     ) {
-        for (id, (pos, automata)) in query.query_mut(&mut self.ecs) {
-            if pos.x < 0
-                || pos.y < 0
-                || pos.x >= i64::from(self.resolution.width)
-                || pos.y >= i64::from(self.resolution.height)
+        for (_id, (mut pos, dest, _automata)) in query.query_mut(&mut self.ecs) {
+            if (dest.x < 0
+                || dest.y < 0
+                || dest.x >= i64::from(self.resolution.width)
+                || dest.y >= i64::from(self.resolution.height))
+                && (pos.x < 0
+                    || pos.y < 0
+                    || pos.x >= i64::from(self.resolution.width)
+                    || pos.y >= i64::from(self.resolution.height))
             {
                 continue;
             }
-            // Maybe draw different automata differently.
-            buffer.set_pixel(
-                (pos.x as u16, pos.y as u16).into(),
-                Pixel::new(255, 255, 255),
-            );
+            let mut to_check = dest.straight_line(pos);
+            if let Some(free) = to_check
+                .iter()
+                .find(|pos| buffer.free((pos.x as u16, pos.y as u16).into()))
+            {
+                *pos = *free;
+                buffer.set_pixel(
+                    (free.x as u16, free.y as u16).into(),
+                    Pixel::new(255, 255, 255),
+                );
+            }
         }
     }
+
+    fn run_update_systems(&mut self, buffer: &mut PixelBuffer) {
+        let mut q = PreparedQuery::<(&mut Destination, &Position, &Automata)>::default();
+        self.update_automata_destination_system(&mut q);
+        let mut q = PreparedQuery::<(&mut Position, &Destination, &Automata)>::default();
+        self.resolve_movement_and_draw_point_automata_system(buffer, &mut q);
+    }
+
     fn draw_sprites_system(
         &mut self,
         buffer: &mut PixelBuffer,
@@ -106,14 +112,16 @@ impl World {
         todo!();
     }
 
-    fn run_draw_systems(&mut self, buffer: &mut PixelBuffer) {
-        let mut q = PreparedQuery::<(&mut Position, &Automata)>::default();
-        self.draw_point_automata_system(buffer, &mut q);
+    fn run_pure_draw_systems(&mut self, buffer: &mut PixelBuffer) {
+        todo!();
+        //let mut q = PreparedQuery::<(&mut Position, &Automata)>::default();
+        //self.draw_point_automata_system(buffer, &mut q);
         //self.draw_sprites_system(buffer, &mut q);
     }
 
     pub fn start(&mut self) {
         'running: loop {
+            let mut buffer: PixelBuffer = PixelBuffer::new(self.resolution);
             let events = self.window.shown();
             for event in events {
                 match event {
@@ -127,15 +135,14 @@ impl World {
                         _ => println!("Pressed unhandled key {:?}", key),
                     },
                     Event::MouseButton(btn) => match btn {
+                        glfw::MouseButton::Button1 => (),
                         _ => println!("Pressed unhandled mouse button {:?}", btn),
                     },
                     Event::Cursor((x, y)) => self.mouse = (x, y),
                 }
             }
-            let mut buffer: PixelBuffer = PixelBuffer::new(self.resolution);
-            self.run_update_systems();
-
-            self.run_draw_systems(&mut buffer);
+            self.run_update_systems(&mut buffer);
+            //self.run_pure_draw_systems(&mut buffer);
 
             self.window.set_frame(buffer.get_buffer());
         }
