@@ -1,7 +1,7 @@
 extern crate glfw;
 use glu_sys::glu::{glDrawPixels, glPixelZoom, glRasterPos2i, GL_RGB, GL_UNSIGNED_BYTE};
 
-use glfw::{Action, Context, Key};
+use glfw::{Action, Context, Key, MouseButton};
 use std::convert::{From, Into};
 
 use crate::gfx::Pixel;
@@ -30,8 +30,11 @@ impl Window {
             )
             .expect("Couldn't initialize the window.");
         window.set_resizable(false);
+        // Polling https://github.com/PistonDevelopers/glfw-rs/blob/master/examples/events.rs
         window.set_key_polling(true);
         window.set_cursor_pos_polling(true);
+        window.set_close_polling(true);
+        window.set_mouse_button_polling(true);
         window.make_current();
         glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
         Self {
@@ -74,12 +77,16 @@ impl Window {
         let mut events = Vec::new();
         for (_, event) in glfw::flush_messages(&self.events) {
             match event {
-                glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
+                glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _)
+                | glfw::WindowEvent::Close => {
                     self.window.set_should_close(true);
                     events.push(Event::Close);
                 }
                 glfw::WindowEvent::Key(key, _, Action::Press, _) => events.push(Event::Key(key)),
                 glfw::WindowEvent::CursorPos(x, y) => events.push(Event::Cursor((x, y))),
+                glfw::WindowEvent::MouseButton(btn, _action, _mods) => {
+                    events.push(Event::MouseButton(btn));
+                }
                 _ => (),
             };
         }
@@ -90,6 +97,7 @@ impl Window {
 #[derive(Debug, Clone, Copy)]
 pub enum Event {
     Key(Key),
+    MouseButton(MouseButton),
     Cursor((f64, f64)),
     Close,
 }
