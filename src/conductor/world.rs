@@ -25,11 +25,7 @@ impl World {
     fn add_walkers(&mut self) {
         let to_spawn = (0..50).map(|_| {
             let pos = Position::new(fastrand::i64(50..400), fastrand::i64(50..400));
-            if fastrand::bool() {
-                (Automata::RandomWalker, pos, Destination::from(pos))
-            } else {
-                (Automata::Water, pos, Destination::from(pos))
-            }
+            (Automata::RandomWalker, pos, Destination::from(pos))
         });
         self.ecs.spawn_batch(to_spawn);
     }
@@ -51,7 +47,7 @@ impl World {
         buffer: &mut PixelBuffer,
         query: &mut PreparedQuery<(&mut Position, &Destination, &Automata)>,
     ) {
-        for (_id, (mut pos, dest, _automata)) in query.query_mut(&mut self.ecs) {
+        for (_id, (pos, dest, _automata)) in query.query_mut(&mut self.ecs) {
             if (dest.x < 0
                 || dest.y < 0
                 || dest.x >= i64::from(self.resolution.width)
@@ -63,7 +59,7 @@ impl World {
             {
                 continue;
             }
-            let mut to_check = dest.straight_line(pos);
+            let to_check = Position::new(dest.x, dest.y).straight_line(*pos);
             if let Some(free) = to_check
                 .iter()
                 .find(|pos| buffer.free((pos.x as u16, pos.y as u16).into()))
@@ -73,6 +69,18 @@ impl World {
                     (free.x as u16, free.y as u16).into(),
                     Pixel::new(255, 255, 255),
                 );
+            } else {
+                let to_check = pos.straight_line(Position::new(pos.x, pos.y - 30));
+                if let Some(free) = to_check
+                    .iter()
+                    .find(|pos| buffer.free((pos.x as u16, pos.y as u16).into()))
+                {
+                    *pos = *free;
+                    buffer.set_pixel(
+                        (free.x as u16, free.y as u16).into(),
+                        Pixel::new(255, 255, 255),
+                    );
+                }
             }
         }
     }
