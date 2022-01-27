@@ -9,7 +9,7 @@ impl Position {
     pub const fn new(x: i64, y: i64) -> Self {
         Self { x, y }
     }
-    pub const fn distance(&self, rhs: &Position) -> i64 {
+    pub const fn distance(&self, rhs: &Self) -> i64 {
         (self.x - rhs.x).abs() + (self.y - rhs.y).abs()
     }
 }

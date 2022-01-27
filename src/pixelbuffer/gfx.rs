@@ -17,6 +17,16 @@ impl Pixel {
     pub const fn alpha() -> Self {
         Self::new(0xff, 0, 0xba)
     }
+
+    #[must_use]
+    pub const fn black() -> Self {
+        Self::new(0, 0, 0)
+    }
+
+    #[must_use]
+    pub const fn white() -> Self {
+        Self::new(255, 255, 255)
+    }
 }
 impl Default for Pixel {
     fn default() -> Self {
@@ -25,7 +35,7 @@ impl Default for Pixel {
 }
 
 pub struct PixelBuffer {
-    resolution: Resolution,
+    bounds: Resolution,
     buffer: Vec<Pixel>,
 }
 
@@ -33,8 +43,8 @@ impl PixelBuffer {
     #[must_use]
     pub fn new(resolution: Resolution) -> Self {
         Self {
-            resolution,
-            buffer: vec![Pixel::default(); resolution.area()],
+            bounds: resolution,
+            buffer: vec![Pixel::black(); resolution.area()],
         }
     }
 
@@ -45,10 +55,45 @@ impl PixelBuffer {
         let (x, y) = coords.into();
         let pixel_position = self
             .buffer
-            .get_mut(usize::from(x) + usize::from(y) * usize::from(self.resolution.width));
+            .get_mut(usize::from(x) + usize::from(y) * usize::from(self.bounds.width));
         match pixel_position {
             Some(pixel_position) => std::mem::swap(pixel_position, &mut pixel),
             None => println!("tried to set pixel outside of pixelbuffer."),
+        }
+    }
+
+    pub fn blit(
+        &mut self,
+        top_left: FramebufferCoordinates,
+        sprite_size: Resolution,
+        sprite: &mut [Pixel],
+    ) {
+        let (offset_x, offset_y) = top_left.into();
+        let (sprite_width, sprite_height) = sprite_size.into();
+        let buffer_right_border = self.bounds.width.min(offset_x + sprite_width);
+        let buffer_down_border = self.bounds.height.min(offset_y + sprite_height);
+
+        for buffer_y in offset_y..buffer_down_border {
+            for buffer_x in offset_x..buffer_right_border {
+                let width = buffer_right_border - offset_x;
+                let sprite_index =
+                    usize::from((buffer_y - offset_y) * width + (buffer_x - offset_x));
+                let sprite_pixel = sprite
+                    .get_mut(sprite_index)
+                    .expect("Index out of sprite in blit, should not be possible.");
+
+                if sprite_pixel == &Pixel::alpha() {
+                    continue;
+                }
+                let buffer_pixel = self
+                    .buffer
+                    .get_mut(
+                        usize::from(buffer_x)
+                            + usize::from(buffer_y) * usize::from(self.bounds.width),
+                    )
+                    .expect("Index out of buffer in blit, should not be possible.");
+                std::mem::swap(buffer_pixel, sprite_pixel);
+            }
         }
     }
 

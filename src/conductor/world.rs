@@ -21,7 +21,7 @@ impl World {
         }
     }
     fn add_walkers(&mut self) {
-        let to_spawn = (0..50).map(|_| {
+        let to_spawn = (0..1).map(|_| {
             let pos = Position::new(fastrand::i64(50..400), fastrand::i64(50..400));
             (Automata::RandomWalker, pos)
         });
@@ -44,7 +44,7 @@ impl World {
 
     fn run_systems(&mut self) {
         let mut q = PreparedQuery::<(&mut Position, &Automata)>::default();
-        self.random_walkers_system(&mut q);
+        //self.random_walkers_system(&mut q);
     }
 
     pub fn start(&mut self) {
@@ -78,6 +78,17 @@ impl World {
                 buffer.set_pixel(
                     (pos.x as u16, pos.y as u16).into(),
                     Pixel::new(255, 255, 255),
+                );
+                let clear = Pixel::alpha();
+                let white = Pixel::new(255, 255, 255);
+                let mut pixels = vec![
+                    white, white, white, white, clear, white, white, clear, white, white, clear,
+                    white, white, clear, white, white, white, white,
+                ];
+                buffer.blit(
+                    (pos.x as u16, pos.y as u16).into(),
+                    Resolution::new(3, 6),
+                    &mut pixels,
                 );
             }
 
