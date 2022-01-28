@@ -1,20 +1,20 @@
-use std::cmp::Ordering;
 use std::convert::From;
 use std::ops::{Add, AddAssign};
-
-use num_iter;
 
 use crate::common::Position;
 
 pub mod random_walker;
+pub mod sand;
 pub mod water;
 
+#[derive(Clone, Copy, Debug)]
 pub enum Automata {
     RandomWalker,
     Water,
+    Sand,
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Destination {
     pub x: i64,
     pub y: i64,
@@ -32,6 +32,15 @@ impl Destination {
 impl From<Position> for Destination {
     fn from(pos: Position) -> Self {
         Self { x: pos.x, y: pos.y }
+    }
+}
+
+impl From<Destination> for Position {
+    fn from(dest: Destination) -> Self {
+        Self {
+            x: dest.x,
+            y: dest.y,
+        }
     }
 }
 

@@ -39,7 +39,8 @@ mod automata;
 mod common;
 use pixelbuffer::Resolution;
 
-const RESOLUTION: Resolution = Resolution::new(480, 480);
+const SCALE: u16 = 1;
+const RESOLUTION: Resolution = Resolution::new(240 * SCALE, 240 * SCALE);
 
 fn main() {
     let mut world = World::new(RESOLUTION, "game");

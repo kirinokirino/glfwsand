@@ -10,6 +10,7 @@ pub struct World {
 
     ecs: Ecs,
     mouse: (f64, f64),
+    selection: Automata,
 }
 
 impl World {
@@ -19,14 +20,12 @@ impl World {
             resolution,
             ecs: Ecs::new(),
             mouse: (0.0, 0.0),
+            selection: Automata::Sand,
         }
     }
 
-    fn add_walkers(&mut self) {
-        let to_spawn = (0..50).map(|_| {
-            let pos = Position::new(fastrand::i64(50..400), fastrand::i64(50..400));
-            (Automata::RandomWalker, pos, Destination::from(pos))
-        });
+    fn add_walkers(&mut self, pos: Position) {
+        let to_spawn = (0..50).map(|_| (self.selection, pos, Destination::from(pos)));
         self.ecs.spawn_batch(to_spawn);
     }
 
@@ -38,6 +37,7 @@ impl World {
             match automata {
                 Automata::RandomWalker => *dest = automata::random_walker::update(pos),
                 Automata::Water => *dest = automata::water::update(pos),
+                Automata::Sand => *dest = automata::sand::update(pos),
             }
         }
     }
@@ -47,7 +47,7 @@ impl World {
         buffer: &mut PixelBuffer,
         query: &mut PreparedQuery<(&mut Position, &Destination, &Automata)>,
     ) {
-        for (_id, (pos, dest, _automata)) in query.query_mut(&mut self.ecs) {
+        for (_id, (pos, dest, automata)) in query.query_mut(&mut self.ecs) {
             if (dest.x < 0
                 || dest.y < 0
                 || dest.x >= i64::from(self.resolution.width)
@@ -59,29 +59,29 @@ impl World {
             {
                 continue;
             }
-            let to_check = Position::new(dest.x, dest.y).straight_line(*pos);
-            if let Some(free) = to_check
+
+            // Only if destination is far away:
+            /* let to_check = Position::new(dest.x, dest.y).straight_line(*pos);
+            let free = to_check
                 .iter()
-                .find(|pos| buffer.free((pos.x as u16, pos.y as u16).into()))
-            {
-                *pos = *free;
-                buffer.set_pixel(
-                    (free.x as u16, free.y as u16).into(),
-                    Pixel::new(255, 255, 255),
-                );
-            } else {
-                let to_check = pos.straight_line(Position::new(pos.x, pos.y - 30));
-                if let Some(free) = to_check
+                .find(|pos| buffer.free((pos.x as u16, pos.y as u16).into()));
+                */
+            let mut dest = Position::from(*dest);
+            let free = buffer.free((dest.x as u16, dest.y as u16).into());
+            if !free {
+                dest = *pos
+                    .straight_line(Position::new(pos.x, pos.y - 100))
                     .iter()
                     .find(|pos| buffer.free((pos.x as u16, pos.y as u16).into()))
-                {
-                    *pos = *free;
-                    buffer.set_pixel(
-                        (free.x as u16, free.y as u16).into(),
-                        Pixel::new(255, 255, 255),
-                    );
-                }
+                    .unwrap_or(pos);
             }
+            *pos = dest;
+            let pixel = match automata {
+                Automata::RandomWalker => Pixel::new(170, fastrand::u8(180..220), 220),
+                Automata::Water => Pixel::new(100, 100, fastrand::u8(180..255)),
+                Automata::Sand => Pixel::new(fastrand::u8(120..200), 90, 70),
+            };
+            buffer.set_pixel((dest.x as u16, dest.y as u16).into(), pixel);
         }
     }
 
@@ -135,15 +135,16 @@ impl World {
                 match event {
                     Event::Close => break 'running,
                     Event::Key(key) => match key {
-                        glfw::Key::W => (),
-                        glfw::Key::S => (),
+                        glfw::Key::W => self.selection = Automata::Water,
+                        glfw::Key::S => self.selection = Automata::Sand,
                         glfw::Key::A => (),
                         glfw::Key::D => (),
-                        glfw::Key::Space => self.add_walkers(),
+                        glfw::Key::Space => self.selection = Automata::RandomWalker,
                         _ => println!("Pressed unhandled key {:?}", key),
                     },
                     Event::MouseButton(btn) => match btn {
-                        glfw::MouseButton::Button1 => (),
+                        glfw::MouseButton::Button1 => self
+                            .add_walkers(Position::new(self.mouse.0 as i64, self.mouse.1 as i64)),
                         _ => println!("Pressed unhandled mouse button {:?}", btn),
                     },
                     Event::Cursor((x, y)) => self.mouse = (x, y),

@@ -57,7 +57,6 @@ impl Window {
                 glRasterPos2i(-1, 1);
                 glPixelZoom(1., -1.);
                 let (width, height) = self.resolution.into();
-                #[allow(clippy::as_conversions)]
                 glDrawPixels(
                     i32::from(width),
                     i32::from(height),

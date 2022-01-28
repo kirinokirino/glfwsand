@@ -1,14 +1,12 @@
 [package]
-name = "conductor"
+name = "glfwsand"
 version = "0.1.0"
 edition = "2021"
-description = "A game."
-repository = "https://github.com/kirinokirino/conductor"
+description = "A sandbox automata physics something rather."
+repository = "https://github.com/kirinokirino/glfwsand"
 readme = "README.md"
 keywords = ["game"]
 license = "MIT"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 name = "pixelbuffer"
@@ -19,9 +17,18 @@ name = "game"
 path = "src/conductor/main.rs"
 
 [dependencies]
-glfw = "0.43.0"
 glu-sys = "0.1.4"
 #glam = { version = "0.20", default-features = true, features = ["debug-glam-assert"] }
 fastrand = "1.7.0"
 hecs = "0.7"
 num-iter = "0.1"
+
+[dependencies.glfw]
+git = "https://github.com/bjz/glfw-rs.git"
+
+[profile.dev]
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]

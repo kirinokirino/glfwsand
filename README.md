@@ -1,4 +1,4 @@
 
-A template to create pixel games.
+A prototype of a sand game, glfw test.
 
-Builds on top of [ufb](https://github.com/MoAlyousef/ufb).
+Pixelbuffer builds on top of [ufb](https://github.com/MoAlyousef/ufb).
